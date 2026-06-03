@@ -7,7 +7,7 @@ An [MCP (Model Context Protocol)](https://modelcontextprotocol.io/) server that 
 ```bash
 docker run -i --rm \
   -e TS_API_KEY=your-api-key \
-  trustsource/mcp-server
+  trustsource/ts-mcp
 ```
 
 That's it. The server speaks MCP over stdio and is ready to be used by any MCP client.
@@ -32,7 +32,7 @@ Add the following to your `claude_desktop_config.json`:
   "mcpServers": {
     "trustsource": {
       "command": "docker",
-      "args": ["run", "-i", "--rm", "-e", "TS_API_KEY", "trustsource/mcp-server"],
+      "args": ["run", "-i", "--rm", "-e", "TS_API_KEY", "trustsource/ts-mcp"],
       "env": {
         "TS_API_KEY": "your-api-key"
       }
@@ -54,7 +54,7 @@ Add to your project or user `.claude/settings.json`:
         "run", "-i", "--rm",
         "-e", "TS_API_KEY",
         "-e", "TS_ACCESS_MODE=readwrite",
-        "trustsource/mcp-server"
+        "trustsource/ts-mcp"
       ],
       "env": {
         "TS_API_KEY": "your-api-key"
@@ -159,7 +159,7 @@ npm start
 npm run docker:build
 
 # Run it
-docker run -i --rm -e TS_API_KEY=your-key trustsource/mcp-server
+docker run -i --rm -e TS_API_KEY=your-key trustsource/ts-mcp
 ```
 
 ## API Key

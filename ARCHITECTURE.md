@@ -69,7 +69,7 @@ TrustSource REST API v2
 Docker image with multi-stage build (build + runtime). Configuration via environment variables at container start.
 
 ```
-docker run -e TS_API_KEY=xxx -e TS_ACCESS_MODE=read trustsource/mcp-server
+docker run -e TS_API_KEY=xxx -e TS_ACCESS_MODE=read trustsource/ts-mcp
 ```
 
 ## Update Flow
@@ -150,7 +150,7 @@ Docker: Build local image (docker-publish.yaml)
         │
         ▼
 ts-scan: Scan image with Syft backend
-        │ ts-scan scan --use-syft docker:trustsource/mcp-server:scan-candidate
+        │ ts-scan scan --use-syft docker:trustsource/ts-mcp:scan-candidate
         │
         ▼
 ts-scan: Upload to TrustSource & wait for analysis

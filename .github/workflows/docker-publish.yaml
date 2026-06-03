@@ -32,7 +32,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v6
         with:
-          images: trustsource/mcp-server
+          images: trustsource/ts-mcp
           tags: |
             type=ref,event=branch
             type=sha,prefix=,format=short
@@ -44,7 +44,7 @@ jobs:
         with:
           context: .
           load: true
-          tags: trustsource/mcp-server:scan-candidate
+          tags: trustsource/ts-mcp:scan-candidate
 
       # --- Scan with ts-scan using Syft backend, then upload to TrustSource ---
 
@@ -61,7 +61,7 @@ jobs:
             --tag "${{ github.sha }}" \
             --branch "${{ github.ref_name }}" \
             -o scan-results.json \
-            docker:trustsource/mcp-server:scan-candidate
+            docker:trustsource/ts-mcp:scan-candidate
 
       - name: Upload scan to TrustSource and gate on results
         env:

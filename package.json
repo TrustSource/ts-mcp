@@ -12,7 +12,7 @@
     "codegen": "tsx scripts/codegen.ts",
     "dev": "tsx src/index.ts",
     "start": "node dist/index.js",
-    "docker:build": "docker build -t trustsource/mcp-server .",
+    "docker:build": "docker build -t trustsource/ts-mcp .",
     "prepare": "npm run codegen && npm run build"
   },
   "keywords": ["mcp", "trustsource", "sbom", "compliance", "security"],
