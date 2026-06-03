@@ -65,7 +65,7 @@ jobs:
 
       - name: Upload scan to TrustSource and gate on results
         env:
-          TS_API_KEY: ${{ secrets['TrustSource_API-KEY'] }}
+          TS_API_KEY: ${{ secrets.TRUSTSOURCE_API_KEY }}
         run: |
           ts-scan upload \
             --api-key "$TS_API_KEY" \
