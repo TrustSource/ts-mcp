@@ -1,0 +1,64 @@
+name: Sync OpenAPI Spec
+
+on:
+  schedule:
+    # Weekly: Monday at 08:00 UTC
+    - cron: "0 8 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  sync:
+    name: Check for upstream spec changes
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download latest OpenAPI spec
+        run: |
+          # TODO: replace with the actual upstream spec URL
+          curl -fsSL \
+            "https://raw.githubusercontent.com/trustsource/api-spec/main/openapi.yaml" \
+            -o /tmp/openapi-latest.yaml
+
+      - name: Check for changes
+        id: diff
+        run: |
+          if diff -q ts-api/openapi.yaml /tmp/openapi-latest.yaml > /dev/null 2>&1; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            cp /tmp/openapi-latest.yaml ts-api/openapi.yaml
+          fi
+
+      - name: Setup Node.js
+        if: steps.diff.outputs.changed == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Regenerate tools
+        if: steps.diff.outputs.changed == 'true'
+        run: |
+          npm ci
+          npm run codegen
+
+      - name: Create pull request
+        if: steps.diff.outputs.changed == 'true'
+        uses: peter-evans/create-pull-request@v7
+        with:
+          commit-message: "chore: update OpenAPI spec"
+          title: "chore: update OpenAPI spec"
+          body: |
+            Automated PR: the upstream OpenAPI spec has changed.
+
+            This PR updates `ts-api/openapi.yaml` and regenerates `src/generated-tools.ts`.
+            Please review the diff carefully before merging.
+          branch: chore/update-openapi-spec
+          delete-branch: true

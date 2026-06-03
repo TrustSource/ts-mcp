@@ -1,0 +1,153 @@
+<mxfile host="app.diagrams.net" agent="Claude Code" version="26.0.0">
+  <diagram id="ts-mcp-architecture" name="TrustSource MCP Server Architecture">
+    <mxGraphModel dx="1422" dy="762" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1000" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- ===== LLM Agent (left side) ===== -->
+        <mxCell id="10" value="LLM Agent&#xa;(e.g. Claude)" style="shape=cloud;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=14;fontStyle=1;verticalAlign=middle;align=center;" vertex="1" parent="1">
+          <mxGeometry x="40" y="200" width="180" height="120" as="geometry" />
+        </mxCell>
+
+        <!-- ===== Docker Container (wraps MCP Server) ===== -->
+        <mxCell id="20" value="Docker Container" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#666666;strokeWidth=2;dashed=1;dashPattern=8 4;fontSize=13;fontStyle=1;verticalAlign=top;align=center;spacingTop=4;" vertex="1" parent="1">
+          <mxGeometry x="340" y="100" width="520" height="380" as="geometry" />
+        </mxCell>
+
+        <!-- ===== MCP Server box ===== -->
+        <mxCell id="30" value="MCP Server" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;strokeWidth=2;fontSize=14;fontStyle=1;verticalAlign=top;align=center;spacingTop=4;" vertex="1" parent="1">
+          <mxGeometry x="380" y="150" width="440" height="290" as="geometry" />
+        </mxCell>
+
+        <!-- Tool Registry -->
+        <mxCell id="31" value="Tool Registry&#xa;(16 domain tools)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;verticalAlign=middle;align=center;" vertex="1" parent="1">
+          <mxGeometry x="410" y="200" width="170" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- Access Control -->
+        <mxCell id="32" value="Access Control&#xa;(TS_ACCESS_MODE filter)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;verticalAlign=middle;align=center;" vertex="1" parent="1">
+          <mxGeometry x="620" y="200" width="170" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- Input Validation -->
+        <mxCell id="33" value="Input Validation&#xa;(sanitization layer)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;verticalAlign=middle;align=center;" vertex="1" parent="1">
+          <mxGeometry x="410" y="290" width="170" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- API Client -->
+        <mxCell id="34" value="API Client&#xa;(HTTP client)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;verticalAlign=middle;align=center;" vertex="1" parent="1">
+          <mxGeometry x="620" y="290" width="170" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- Internal arrows within MCP Server -->
+        <mxCell id="35" value="" style="endArrow=classic;html=1;strokeColor=#6c8ebf;" edge="1" parent="1" source="31" target="32">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="36" value="" style="endArrow=classic;html=1;strokeColor=#6c8ebf;" edge="1" parent="1" source="32" target="34">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="37" value="" style="endArrow=classic;html=1;strokeColor=#6c8ebf;" edge="1" parent="1" source="31" target="33">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="38" value="" style="endArrow=classic;html=1;strokeColor=#6c8ebf;" edge="1" parent="1" source="33" target="34">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- ===== TrustSource API v2 (right side) ===== -->
+        <mxCell id="40" value="TrustSource&#xa;API v2" style="shape=cloud;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=14;fontStyle=1;verticalAlign=middle;align=center;" vertex="1" parent="1">
+          <mxGeometry x="980" y="200" width="200" height="120" as="geometry" />
+        </mxCell>
+
+        <!-- ===== Configuration (top) ===== -->
+        <mxCell id="50" value="Configuration" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;strokeWidth=2;fontSize=14;fontStyle=1;verticalAlign=top;align=center;spacingTop=4;" vertex="1" parent="1">
+          <mxGeometry x="420" y="10" width="360" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="51" value="TS_API_KEY  |  TS_ACCESS_MODE  |  TS_BASE_URL" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;fontSize=11;fontFamily=Courier New;" vertex="1" parent="1">
+          <mxGeometry x="430" y="30" width="340" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- ===== Data Flow Arrows ===== -->
+
+        <!-- LLM Agent -> MCP Server -->
+        <mxCell id="60" value="stdio&#xa;(MCP protocol)" style="endArrow=classic;startArrow=classic;html=1;strokeColor=#333333;strokeWidth=2;fontSize=11;fontStyle=1;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="10" target="30">
+          <mxGeometry x="0.05" relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- MCP Server -> TrustSource API -->
+        <mxCell id="61" value="HTTPS&#xa;+ x-api-key" style="endArrow=classic;startArrow=classic;html=1;strokeColor=#333333;strokeWidth=2;fontSize=11;fontStyle=1;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="30" target="40">
+          <mxGeometry x="0.05" relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Config -> Docker Container -->
+        <mxCell id="62" value="Environment&#xa;Variables" style="endArrow=classic;html=1;strokeColor=#d6b656;strokeWidth=2;fontSize=11;fontStyle=1;labelBackgroundColor=#FFFFFF;dashed=1;" edge="1" parent="1" source="50" target="20">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="600" y="90" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- ===== Build Pipeline (bottom section) ===== -->
+        <mxCell id="70" value="Build Pipeline" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#999999;strokeWidth=1;dashed=1;dashPattern=4 4;fontSize=13;fontStyle=1;verticalAlign=top;align=left;spacingTop=2;spacingLeft=8;" vertex="1" parent="1">
+          <mxGeometry x="40" y="560" width="1140" height="120" as="geometry" />
+        </mxCell>
+
+        <!-- OpenAPI Spec -->
+        <mxCell id="71" value="OpenAPI Spec&#xa;(TrustSource v2)" style="shape=document;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;verticalAlign=middle;align=center;" vertex="1" parent="1">
+          <mxGeometry x="70" y="600" width="140" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- domain-mapping.yaml -->
+        <mxCell id="72" value="domain-mapping.yaml" style="shape=document;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;verticalAlign=middle;align=center;" vertex="1" parent="1">
+          <mxGeometry x="70" y="530" width="140" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- Codegen -->
+        <mxCell id="73" value="Codegen&#xa;(scripts/)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;fontStyle=1;verticalAlign=middle;align=center;" vertex="1" parent="1">
+          <mxGeometry x="310" y="600" width="130" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- Generated Tools -->
+        <mxCell id="74" value="Generated Tools&#xa;(src/tools/)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;fontStyle=1;verticalAlign=middle;align=center;" vertex="1" parent="1">
+          <mxGeometry x="540" y="600" width="140" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- Docker Build -->
+        <mxCell id="75" value="Docker Build" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;fontStyle=1;verticalAlign=middle;align=center;" vertex="1" parent="1">
+          <mxGeometry x="780" y="600" width="130" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- Docker Hub -->
+        <mxCell id="76" value="Docker Hub&#xa;(ghcr.io)" style="shape=cloud;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;fontStyle=1;verticalAlign=middle;align=center;" vertex="1" parent="1">
+          <mxGeometry x="990" y="590" width="160" height="80" as="geometry" />
+        </mxCell>
+
+        <!-- Build pipeline arrows -->
+        <mxCell id="80" value="" style="endArrow=classic;html=1;strokeColor=#999999;strokeWidth=1.5;" edge="1" parent="1" source="71" target="73">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="81" value="" style="endArrow=classic;html=1;strokeColor=#999999;strokeWidth=1.5;" edge="1" parent="1" source="72" target="73">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="82" value="" style="endArrow=classic;html=1;strokeColor=#999999;strokeWidth=1.5;" edge="1" parent="1" source="73" target="74">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="83" value="" style="endArrow=classic;html=1;strokeColor=#999999;strokeWidth=1.5;" edge="1" parent="1" source="74" target="75">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="84" value="" style="endArrow=classic;html=1;strokeColor=#999999;strokeWidth=1.5;" edge="1" parent="1" source="75" target="76">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- ===== Title ===== -->
+        <mxCell id="90" value="TrustSource MCP Server - Architecture" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;fontSize=18;fontStyle=1;fontColor=#333333;" vertex="1" parent="1">
+          <mxGeometry x="440" y="500" width="340" height="40" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

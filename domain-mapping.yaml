@@ -1,0 +1,285 @@
+domains:
+  account:
+    description: "Check API key authorization status against TrustSource"
+    minAccessMode: read
+    paths:
+      - path: /account/authorization
+        methods: [get]
+
+  projects:
+    description: "Manage TrustSource projects — list, create, update, delete projects and retrieve their parts lists and SBOMs"
+    minAccessMode: read
+    paths:
+      - path: /core/projects
+        methods: [get]
+      - path: /core/projects
+        methods: [post]
+        minAccessMode: readwrite
+      - path: /core/projects/{project_id}
+        methods: [get]
+      - path: /core/projects/{project_id}
+        methods: [post]
+        minAccessMode: readwrite
+      - path: /core/projects/{project_id}
+        methods: [delete]
+        minAccessMode: full
+      - path: /core/projects/{project_id}/partsList
+        methods: [get]
+      - path: /core/projects/{project_id}/sbom
+        methods: [get]
+
+  modules:
+    description: "Manage TrustSource modules — list, create, update, delete modules and retrieve their parts lists and SBOMs"
+    minAccessMode: read
+    paths:
+      - path: /core/modules
+        methods: [get]
+      - path: /core/modules/{module_id}
+        methods: [get]
+      - path: /core/modules/{module_id}
+        methods: [post]
+        minAccessMode: readwrite
+      - path: /core/modules/{module_id}
+        methods: [delete]
+        minAccessMode: full
+      - path: /core/modules/{module_id}/partsList
+        methods: [get]
+      - path: /core/modules/{module_id}/sbom
+        methods: [get]
+
+  products:
+    description: "Manage TrustSource products — create, update, retire/unretire products, manage misuse reports, support contacts, solutions, photos, and documents"
+    minAccessMode: read
+    paths:
+      - path: /core/products
+        methods: [get]
+      - path: /core/products
+        methods: [post]
+        minAccessMode: readwrite
+      - path: /core/products/{product_id}
+        methods: [get]
+      - path: /core/products/{product_id}
+        methods: [post]
+        minAccessMode: readwrite
+      - path: /core/products/{product_id}/retire
+        methods: [post]
+        minAccessMode: full
+      - path: /core/products/{product_id}/unretire
+        methods: [post]
+        minAccessMode: full
+      - path: /core/products/{product_id}/misuse
+        methods: [post]
+        minAccessMode: readwrite
+      - path: /core/products/{product_id}/misuse/{item_id}
+        methods: [delete]
+        minAccessMode: full
+      - path: /core/products/{product_id}/support
+        methods: [post]
+        minAccessMode: readwrite
+      - path: /core/products/{product_id}/support/{item_id}
+        methods: [delete]
+        minAccessMode: full
+      - path: /core/products/{product_id}/solution
+        methods: [post]
+        minAccessMode: readwrite
+      - path: /core/products/{product_id}/solution/{approval_id}
+        methods: [delete]
+        minAccessMode: full
+      - path: /core/products/{product_id}/photo
+        methods: [post]
+        minAccessMode: readwrite
+      - path: /core/products/{product_id}/photo
+        methods: [delete]
+        minAccessMode: full
+      - path: /core/products/{product_id}/document
+        methods: [post]
+        minAccessMode: readwrite
+      - path: /core/products/{product_id}/document
+        methods: [delete]
+        minAccessMode: full
+
+  scans:
+    description: "Submit and manage dependency scans — list scans, view results, reprocess, manage binary links, and import SBOMs (CycloneDX, SPDX)"
+    minAccessMode: read
+    paths:
+      - path: /core/scans
+        methods: [get]
+      - path: /core/scans
+        methods: [post]
+        minAccessMode: readwrite
+      - path: /core/scans/{scan_id}
+        methods: [get]
+      - path: /core/scans/{scan_id}/reprocess
+        methods: [post]
+        minAccessMode: readwrite
+      - path: /core/scans/{scan_id}/binaryLinks
+        methods: [get]
+      - path: /core/scans/{scan_id}/binaryLinks
+        methods: [post]
+        minAccessMode: readwrite
+      - path: /core/imports/scan/cyclonedx
+        methods: [post]
+        minAccessMode: readwrite
+      - path: /core/imports/scan/cyclonedx/json
+        methods: [post]
+        minAccessMode: readwrite
+      - path: /core/imports/scan/spdx
+        methods: [post]
+        minAccessMode: readwrite
+      - path: /core/imports/scan/spdx/json
+        methods: [post]
+        minAccessMode: readwrite
+      - path: /core/imports/scan/spdx/rdf
+        methods: [post]
+        minAccessMode: readwrite
+
+  tests:
+    description: "Import SARIF test results into TrustSource for security analysis"
+    minAccessMode: readwrite
+    paths:
+      - path: /core/tests/sarif
+        methods: [post]
+      - path: /core/tests/sarif/json
+        methods: [post]
+
+  reports:
+    description: "Retrieve compliance, vulnerability, versioning, viability, license, CVE, dashboard, and end-of-life reports"
+    minAccessMode: read
+    paths:
+      - path: /core/reports/algorithms
+        methods: [get]
+      - path: /core/reports/vulnerabilities
+        methods: [get]
+      - path: /core/reports/versioning
+        methods: [get]
+      - path: /core/reports/viability
+        methods: [get]
+      - path: /core/reports/licenses
+        methods: [get]
+      - path: /core/reports/cve
+        methods: [get]
+      - path: /core/reports/dashboard
+        methods: [get]
+      - path: /core/reports/endoflife
+        methods: [get]
+
+  releases:
+    description: "Access published compliance release documents — SBOMs, notice files, and CSAF/VEX advisories with change tracking"
+    minAccessMode: read
+    paths:
+      - path: /compliance/releases/{release_key}/sbom
+        methods: [get]
+      - path: /compliance/releases/{release_key}/notice
+        methods: [get]
+      - path: /compliance/releases/{release_key}/csaf
+        methods: [get]
+      - path: /compliance/releases/{release_key}/csaf-changes
+        methods: [get]
+      - path: /compliance/csaf/{csaf_key}/documents
+        methods: [get]
+      - path: /compliance/csaf/{csaf_key}/documents/{document_id}
+        methods: [get]
+
+  compliance-check:
+    description: "Check license compatibility and component compliance against company FOSS policies"
+    minAccessMode: read
+    paths:
+      - path: /compliance/check/license
+        methods: [post]
+      - path: /compliance/check/component
+        methods: [post]
+
+  approvals:
+    description: "Manage compliance approval workflows — list, view, approve, and reject approval requests"
+    minAccessMode: read
+    paths:
+      - path: /compliance/approvals
+        methods: [post]
+        minAccessMode: readwrite
+      - path: /compliance/approvals/{approval_id}
+        methods: [get]
+      - path: /compliance/approvals/{approval_id}/approve
+        methods: [post]
+        minAccessMode: full
+      - path: /compliance/approvals/{approval_id}/reject
+        methods: [post]
+        minAccessMode: full
+
+  company:
+    description: "Retrieve company FOSS compliance settings and policies"
+    minAccessMode: read
+    paths:
+      - path: /compliance/company/foss
+        methods: [get]
+
+  vulnerabilities:
+    description: "Look up CVE and CWE vulnerability details, search for vulnerabilities by keyword or component"
+    minAccessMode: read
+    paths:
+      - path: /vulnerabilities/cwes/{cwe_id}
+        methods: [get]
+      - path: /vulnerabilities/cveDetails
+        methods: [get]
+      - path: /vulnerabilities/cveFind
+        methods: [get]
+      - path: /vulnerabilities/cveFindByKey
+        methods: [get]
+
+  psirt:
+    description: "Access Product Security Incident Response CSAF/VEX advisories for components"
+    minAccessMode: read
+    paths:
+      - path: /psirt/csaf
+        methods: [get]
+
+  deepscan:
+    description: "Trigger and retrieve repository deep scans for license and security analysis"
+    minAccessMode: read
+    paths:
+      - path: /repository/scan
+        methods: [post]
+        minAccessMode: readwrite
+      - path: /repository/results
+        methods: [get]
+      - path: /repository/status
+        methods: [get]
+
+  risks:
+    description: "Manage risk assessments — list, create, update, delete risks and their associated tasks"
+    minAccessMode: read
+    paths:
+      - path: /core/risks
+        methods: [get]
+      - path: /core/risks
+        methods: [post]
+        minAccessMode: readwrite
+      - path: /core/risks/{risk_id}
+        methods: [get]
+      - path: /core/risks/{risk_id}
+        methods: [post]
+        minAccessMode: readwrite
+      - path: /core/risks/{risk_id}
+        methods: [delete]
+        minAccessMode: full
+      - path: /core/risks/{risk_id}/tasks
+        methods: [get]
+      - path: /core/risks/{risk_id}/tasks
+        methods: [post]
+        minAccessMode: readwrite
+      - path: /core/risks/{risk_id}/tasks/{task_id}
+        methods: [get]
+      - path: /core/risks/{risk_id}/tasks/{task_id}
+        methods: [post]
+        minAccessMode: readwrite
+      - path: /core/risks/{risk_id}/tasks/{task_id}
+        methods: [delete]
+        minAccessMode: full
+
+  users:
+    description: "View user activity and API usage statistics"
+    minAccessMode: read
+    paths:
+      - path: /core/users/nologin
+        methods: [get]
+      - path: /core/users/usage
+        methods: [get]

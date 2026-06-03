@@ -1,0 +1,33 @@
+{
+  "name": "@trustsource/mcp-server",
+  "version": "0.1.0",
+  "description": "MCP server for the TrustSource REST API",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "ts-mcp": "dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "codegen": "tsx scripts/codegen.ts",
+    "dev": "tsx src/index.ts",
+    "start": "node dist/index.js",
+    "docker:build": "docker build -t trustsource/mcp-server .",
+    "prepare": "npm run codegen && npm run build"
+  },
+  "keywords": ["mcp", "trustsource", "sbom", "compliance", "security"],
+  "license": "Apache-2.0",
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.0",
+    "yaml": "^2.7.1",
+    "zod": "^3.25.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.8.0"
+  }
+}
