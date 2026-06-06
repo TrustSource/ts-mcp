@@ -1,0 +1,91 @@
+name: Deploy to ECS
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Target environment
+        required: true
+        type: choice
+        options:
+          - dev
+          - prd
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy:
+    name: Deploy to ${{ inputs.environment }}
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: eu-central-1
+
+      - name: Select parameter file
+        id: params
+        run: |
+          ENV="${{ inputs.environment }}"
+          FILE="deploy/params4${ENV^^}.json"
+          echo "file=$FILE" >> "$GITHUB_OUTPUT"
+
+          # Fail if placeholders remain
+          if grep -q "REPLACE_WITH\|XXXXXXXXX\|YYYYYYY\|ACCOUNT" "$FILE"; then
+            echo "::error::$FILE contains placeholder values."
+            exit 1
+          fi
+
+      - name: Validate CloudFormation template
+        run: |
+          aws cloudformation validate-template \
+            --template-body file://deploy/cfn-ecs-service.yaml
+
+      - name: Deploy CloudFormation stack
+        run: |
+          STACK_NAME="ts-mcp-${{ inputs.environment }}"
+
+          aws cloudformation deploy \
+            --stack-name "$STACK_NAME" \
+            --template-file deploy/cfn-ecs-service.yaml \
+            --parameter-overrides "file://${{ steps.params.outputs.file }}" \
+            --capabilities CAPABILITY_NAMED_IAM \
+            --no-fail-on-empty-changeset
+
+      - name: Force new deployment
+        run: |
+          STACK_NAME="ts-mcp-${{ inputs.environment }}"
+
+          # Get the ECS cluster and service from stack outputs
+          SERVICE_ARN=$(aws cloudformation describe-stacks \
+            --stack-name "$STACK_NAME" \
+            --query "Stacks[0].Outputs[?OutputKey=='ServiceArn'].OutputValue" \
+            --output text)
+
+          CLUSTER_ARN=$(aws cloudformation describe-stacks \
+            --stack-name "$STACK_NAME" \
+            --query "Stacks[0].Parameters[?ParameterKey=='ClusterArn'].ParameterValue" \
+            --output text)
+
+          # Force pull of latest image
+          aws ecs update-service \
+            --cluster "$CLUSTER_ARN" \
+            --service "$SERVICE_ARN" \
+            --force-new-deployment \
+            --query "service.deployments[0].status" \
+            --output text
+
+      - name: Show stack outputs
+        run: |
+          aws cloudformation describe-stacks \
+            --stack-name "ts-mcp-${{ inputs.environment }}" \
+            --query "Stacks[0].Outputs" \
+            --output table

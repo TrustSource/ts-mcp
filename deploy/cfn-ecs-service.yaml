@@ -1,0 +1,189 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >
+  ECS Service for TrustSource MCP Server.
+  Deploys as a Fargate task pulling from the EACG Docker registry.
+
+Parameters:
+  Environment:
+    Type: String
+    AllowedValues: [dev, prd]
+    Description: Target environment
+
+  VpcId:
+    Type: AWS::EC2::VPC::Id
+    Description: VPC to deploy into
+
+  SubnetIds:
+    Type: List<AWS::EC2::Subnet::Id>
+    Description: Subnets for the ECS tasks
+
+  ClusterArn:
+    Type: String
+    Description: ARN of the existing ECS cluster
+
+  ImageRepository:
+    Type: String
+    Default: trustsource/ts-mcp
+    Description: Docker image repository (Docker Hub)
+
+  ImageTag:
+    Type: String
+    Default: latest
+    Description: Docker image tag (latest for DEV, prd for PRD)
+
+  TsApiKey:
+    Type: String
+    NoEcho: true
+    Description: TrustSource API key
+
+  TsAccessMode:
+    Type: String
+    Default: read
+    AllowedValues: [read, readwrite, full]
+    Description: MCP server access mode
+
+  TsApiBaseUrl:
+    Type: String
+    Default: https://api.trustsource.io/v2
+    Description: TrustSource API base URL
+
+  TaskCpu:
+    Type: String
+    Default: '256'
+    AllowedValues: ['256', '512', '1024']
+    Description: CPU units for the task
+
+  TaskMemory:
+    Type: String
+    Default: '512'
+    AllowedValues: ['512', '1024', '2048']
+    Description: Memory (MiB) for the task
+
+  DesiredCount:
+    Type: Number
+    Default: 1
+    MinValue: 0
+    MaxValue: 4
+    Description: Number of running tasks
+
+  LogRetentionDays:
+    Type: Number
+    Default: 14
+    AllowedValues: [7, 14, 30, 60, 90]
+    Description: CloudWatch log retention in days
+
+Resources:
+
+  LogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /ecs/ts-mcp-${Environment}
+      RetentionInDays: !Ref LogRetentionDays
+
+  TaskExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub ts-mcp-${Environment}-exec-role
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ecs-tasks.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
+
+  TaskRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub ts-mcp-${Environment}-task-role
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ecs-tasks.amazonaws.com
+            Action: sts:AssumeRole
+
+  TaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Family: !Sub ts-mcp-${Environment}
+      Cpu: !Ref TaskCpu
+      Memory: !Ref TaskMemory
+      NetworkMode: awsvpc
+      RequiresCompatibilities:
+        - FARGATE
+      ExecutionRoleArn: !GetAtt TaskExecutionRole.Arn
+      TaskRoleArn: !GetAtt TaskRole.Arn
+      ContainerDefinitions:
+        - Name: ts-mcp
+          Image: !Sub ${ImageRepository}:${ImageTag}
+          Essential: true
+          Environment:
+            - Name: TS_API_KEY
+              Value: !Ref TsApiKey
+            - Name: TS_ACCESS_MODE
+              Value: !Ref TsAccessMode
+            - Name: TS_API_BASE_URL
+              Value: !Ref TsApiBaseUrl
+            - Name: TS_LOG_LEVEL
+              Value: !If
+                - IsDev
+                - debug
+                - info
+            - Name: NODE_ENV
+              Value: production
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: !Ref LogGroup
+              awslogs-region: !Ref AWS::Region
+              awslogs-stream-prefix: ts-mcp
+
+  SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: !Sub ts-mcp-${Environment} ECS tasks
+      VpcId: !Ref VpcId
+      SecurityGroupEgress:
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
+          Description: HTTPS to TrustSource API
+
+  Service:
+    Type: AWS::ECS::Service
+    Properties:
+      ServiceName: !Sub ts-mcp-${Environment}
+      Cluster: !Ref ClusterArn
+      TaskDefinition: !Ref TaskDefinition
+      DesiredCount: !Ref DesiredCount
+      LaunchType: FARGATE
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          AssignPublicIp: ENABLED
+          Subnets: !Ref SubnetIds
+          SecurityGroups:
+            - !GetAtt SecurityGroup.GroupId
+      DeploymentConfiguration:
+        MinimumHealthyPercent: 0
+        MaximumPercent: 200
+
+Conditions:
+  IsDev: !Equals [!Ref Environment, dev]
+
+Outputs:
+  ServiceArn:
+    Description: ARN of the ECS service
+    Value: !Ref Service
+
+  TaskDefinitionArn:
+    Description: ARN of the task definition
+    Value: !Ref TaskDefinition
+
+  LogGroupName:
+    Description: CloudWatch log group
+    Value: !Ref LogGroup

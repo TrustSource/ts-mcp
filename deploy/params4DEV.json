@@ -1,0 +1,15 @@
+[
+  { "ParameterKey": "Environment",     "ParameterValue": "dev" },
+  { "ParameterKey": "VpcId",           "ParameterValue": "vpc-XXXXXXXXX" },
+  { "ParameterKey": "SubnetIds",       "ParameterValue": "subnet-XXXXXXX,subnet-YYYYYYY" },
+  { "ParameterKey": "ClusterArn",      "ParameterValue": "arn:aws:ecs:eu-central-1:ACCOUNT:cluster/dev-cluster" },
+  { "ParameterKey": "ImageRepository", "ParameterValue": "trustsource/ts-mcp" },
+  { "ParameterKey": "ImageTag",        "ParameterValue": "latest" },
+  { "ParameterKey": "TsApiKey",        "ParameterValue": "REPLACE_WITH_DEV_API_KEY" },
+  { "ParameterKey": "TsAccessMode",    "ParameterValue": "readwrite" },
+  { "ParameterKey": "TsApiBaseUrl",    "ParameterValue": "https://api.dev.trustsource.io/v2" },
+  { "ParameterKey": "TaskCpu",         "ParameterValue": "256" },
+  { "ParameterKey": "TaskMemory",      "ParameterValue": "512" },
+  { "ParameterKey": "DesiredCount",    "ParameterValue": "1" },
+  { "ParameterKey": "LogRetentionDays","ParameterValue": "7" }
+]

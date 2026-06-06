@@ -1,0 +1,15 @@
+[
+  { "ParameterKey": "Environment",     "ParameterValue": "prd" },
+  { "ParameterKey": "VpcId",           "ParameterValue": "vpc-XXXXXXXXX" },
+  { "ParameterKey": "SubnetIds",       "ParameterValue": "subnet-XXXXXXX,subnet-YYYYYYY" },
+  { "ParameterKey": "ClusterArn",      "ParameterValue": "arn:aws:ecs:eu-central-1:ACCOUNT:cluster/prd-cluster" },
+  { "ParameterKey": "ImageRepository", "ParameterValue": "trustsource/ts-mcp" },
+  { "ParameterKey": "ImageTag",        "ParameterValue": "prd" },
+  { "ParameterKey": "TsApiKey",        "ParameterValue": "REPLACE_WITH_PRD_API_KEY" },
+  { "ParameterKey": "TsAccessMode",    "ParameterValue": "read" },
+  { "ParameterKey": "TsApiBaseUrl",    "ParameterValue": "https://api.trustsource.io/v2" },
+  { "ParameterKey": "TaskCpu",         "ParameterValue": "512" },
+  { "ParameterKey": "TaskMemory",      "ParameterValue": "1024" },
+  { "ParameterKey": "DesiredCount",    "ParameterValue": "1" },
+  { "ParameterKey": "LogRetentionDays","ParameterValue": "30" }
+]
