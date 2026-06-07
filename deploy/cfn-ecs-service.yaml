@@ -72,6 +72,10 @@ Parameters:
     AllowedValues: [7, 14, 30, 60, 90]
     Description: CloudWatch log retention in days
 
+  ConsumerSecurityGroupId:
+    Type: AWS::EC2::SecurityGroup::Id
+    Description: Security group of MCP consumers — only this group can reach port 3000
+
 Resources:
 
   LogGroup:
@@ -128,6 +132,10 @@ Resources:
               Value: !Ref TsAccessMode
             - Name: TS_API_BASE_URL
               Value: !Ref TsApiBaseUrl
+            - Name: TS_TRANSPORT
+              Value: http
+            - Name: TS_HTTP_PORT
+              Value: '3000'
             - Name: TS_LOG_LEVEL
               Value: !If
                 - IsDev
@@ -135,6 +143,9 @@ Resources:
                 - info
             - Name: NODE_ENV
               Value: production
+          PortMappings:
+            - ContainerPort: 3000
+              Protocol: tcp
           LogConfiguration:
             LogDriver: awslogs
             Options:
@@ -147,6 +158,12 @@ Resources:
     Properties:
       GroupDescription: !Sub ts-mcp-${Environment} ECS tasks
       VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 3000
+          ToPort: 3000
+          SourceSecurityGroupId: !Ref ConsumerSecurityGroupId
+          Description: MCP Streamable HTTP from consumer group
       SecurityGroupEgress:
         - IpProtocol: tcp
           FromPort: 443
