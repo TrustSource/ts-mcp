@@ -12,7 +12,7 @@ docker run -i --rm \
   trustsource/ts-mcp
 ```
 
-The server speaks MCP over stdio and works with any MCP-compatible client.
+The server supports two transport modes: **stdio** (default, for local use) and **Streamable HTTP** (for server deployment with multiple concurrent clients).
 
 ## Configuration
 
@@ -20,6 +20,8 @@ The server speaks MCP over stdio and works with any MCP-compatible client.
 |---|---|---|---|
 | `TS_API_KEY` | **Yes** | — | TrustSource API key |
 | `TS_ACCESS_MODE` | No | `read` | Access tier: `read`, `readwrite`, or `full` |
+| `TS_TRANSPORT` | No | `stdio` | Transport: `stdio` or `http` |
+| `TS_HTTP_PORT` | No | `3000` | HTTP listen port (for `http` transport) |
 | `TS_API_BASE_URL` | No | `https://api.trustsource.io/v2` | API base URL |
 | `TS_LOG_LEVEL` | No | `info` | Log verbosity: `debug`, `info`, `warn`, `error` |
 

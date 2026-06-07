@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.2.0] - 2026-06-07
+
+### Added
+
+- Streamable HTTP transport (`TS_TRANSPORT=http`) for multi-session server deployment
+- Health check endpoint (`GET /health`) for ECS/load balancer integration
+- Configurable HTTP port via `TS_HTTP_PORT` (default: 3000)
+- ECS Fargate deployment via CloudFormation (in EACG fork)
+- Security group restricts MCP port to consumer group only
+
+### Changed
+
+- Removed npm/yarn/corepack from runtime Docker image — eliminates transitive vulnerabilities
+
 ## [0.1.0] - 2026-06-03
 
 ### Added

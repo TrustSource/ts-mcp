@@ -1,7 +1,10 @@
 #!/usr/bin/env node
 
+import { createServer } from "node:http";
+import { randomUUID } from "node:crypto";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { z } from "zod";
 import { loadConfig, isAccessAllowed, type AccessMode } from "./config.js";
 import { TrustSourceClient } from "./api-client.js";
@@ -9,7 +12,7 @@ import { logger, setLogLevel } from "./logger.js";
 import { validateId, validateStringParam, validateJsonBody, validateSbomDocument } from "./validation.js";
 import { DOMAIN_TOOLS, type ToolAction, type DomainTool } from "./generated-tools.js";
 
-const VERSION = "0.1.0";
+const VERSION = "0.2.0";
 
 function buildInputSchema(tool: DomainTool) {
   const actionNames = tool.actions.map((a) => a.name);
@@ -130,40 +133,18 @@ function buildApiPath(
   });
 }
 
-async function main() {
-  const config = loadConfig();
-  setLogLevel(config.logLevel);
-
-  logger.info(`TrustSource MCP Server v${VERSION} starting`, {
-    accessMode: config.accessMode,
-    baseUrl: config.apiBaseUrl,
-  });
-
-  const client = new TrustSourceClient(config.apiBaseUrl, config.apiKey);
-
-  logger.info("Validating API key...");
-  const keyValid = await client.validateApiKey();
-  if (!keyValid) {
-    logger.error(
-      "API key validation failed — the key is invalid or TrustSource API is unreachable. " +
-        "Check your TS_API_KEY and try again.",
-    );
-    process.exit(1);
-  }
-  logger.info("API key validated successfully");
-
-  const server = new McpServer({
-    name: "trustsource",
-    version: VERSION,
-  });
-
+function registerTools(
+  server: McpServer,
+  accessMode: AccessMode,
+  client: TrustSourceClient,
+): void {
   const availableTools = DOMAIN_TOOLS.filter((tool) =>
-    tool.actions.some((a) => isAccessAllowed(a.minAccessMode, config.accessMode)),
+    tool.actions.some((a) => isAccessAllowed(a.minAccessMode, accessMode)),
   );
 
   for (const tool of availableTools) {
     const visibleActions = tool.actions.filter((a) =>
-      isAccessAllowed(a.minAccessMode, config.accessMode),
+      isAccessAllowed(a.minAccessMode, accessMode),
     );
 
     const actionDescriptions = visibleActions
@@ -184,7 +165,7 @@ async function main() {
         params: Object.keys(args).filter((k) => k !== "action" && k !== "body"),
       });
 
-      const resolved = resolveAction(tool, actionName, config.accessMode);
+      const resolved = resolveAction(tool, actionName, accessMode);
       if ("error" in resolved) {
         logger.warn(`Access denied: ${resolved.error}`);
         return { content: [{ type: "text", text: resolved.error }], isError: true };
@@ -251,10 +232,117 @@ async function main() {
   logger.info(`Registered ${availableTools.length} domain tools`, {
     tools: availableTools.map((t) => t.name),
   });
+}
 
-  const transport = new StdioServerTransport();
-  await server.connect(transport);
-  logger.info("MCP server connected via stdio");
+async function main() {
+  const config = loadConfig();
+  setLogLevel(config.logLevel);
+
+  logger.info(`TrustSource MCP Server v${VERSION} starting`, {
+    accessMode: config.accessMode,
+    transport: config.transport,
+    baseUrl: config.apiBaseUrl,
+  });
+
+  const client = new TrustSourceClient(config.apiBaseUrl, config.apiKey);
+
+  logger.info("Validating API key...");
+  const keyValid = await client.validateApiKey();
+  if (!keyValid) {
+    logger.error(
+      "API key validation failed — the key is invalid or TrustSource API is unreachable. " +
+        "Check your TS_API_KEY and try again.",
+    );
+    process.exit(1);
+  }
+  logger.info("API key validated successfully");
+
+  if (config.transport === "stdio") {
+    const server = new McpServer({
+      name: "trustsource",
+      version: VERSION,
+    });
+    registerTools(server, config.accessMode, client);
+
+    const transport = new StdioServerTransport();
+    await server.connect(transport);
+    logger.info("MCP server connected via stdio");
+  } else {
+    // Streamable HTTP transport — multi-session capable
+    const sessions = new Map<string, StreamableHTTPServerTransport>();
+
+    const httpServer = createServer(async (req, res) => {
+      const url = new URL(req.url ?? "/", `http://localhost:${config.httpPort}`);
+
+      // Health check endpoint
+      if (url.pathname === "/health" && req.method === "GET") {
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ status: "ok", version: VERSION }));
+        return;
+      }
+
+      // MCP endpoint
+      if (url.pathname === "/mcp") {
+        // Check for existing session
+        const sessionId = req.headers["mcp-session-id"] as string | undefined;
+
+        if (sessionId && sessions.has(sessionId)) {
+          // Existing session
+          const transport = sessions.get(sessionId)!;
+          await transport.handleRequest(req, res);
+          return;
+        }
+
+        if (sessionId && !sessions.has(sessionId)) {
+          // Unknown session ID
+          res.writeHead(404, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ error: "Session not found" }));
+          return;
+        }
+
+        // New session — create transport and connect a fresh server instance
+        const transport = new StreamableHTTPServerTransport({
+          sessionIdGenerator: () => randomUUID(),
+        });
+
+        transport.onclose = () => {
+          const sid = transport.sessionId;
+          if (sid) {
+            sessions.delete(sid);
+            logger.info(`Session closed: ${sid}`);
+          }
+        };
+
+        const sessionServer = new McpServer({
+          name: "trustsource",
+          version: VERSION,
+        });
+
+        // Register tools on the session server
+        registerTools(sessionServer, config.accessMode, client);
+
+        await sessionServer.connect(transport);
+        await transport.handleRequest(req, res);
+
+        if (transport.sessionId) {
+          sessions.set(transport.sessionId, transport);
+          logger.info(`New session: ${transport.sessionId}`);
+        }
+        return;
+      }
+
+      // 404 for everything else
+      res.writeHead(404, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: "Not found" }));
+    });
+
+    httpServer.listen(config.httpPort, () => {
+      logger.info(`MCP server listening on http://0.0.0.0:${config.httpPort}/mcp`, {
+        transport: "streamable-http",
+        port: config.httpPort,
+      });
+    });
+  }
 }
 
 main().catch((err) => {

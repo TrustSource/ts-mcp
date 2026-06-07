@@ -18,8 +18,31 @@ That's it. The server speaks MCP over stdio and is ready to be used by any MCP c
 |---|---|---|---|
 | `TS_API_KEY` | **Yes** | — | TrustSource API key ([how to obtain one](#api-key)) |
 | `TS_ACCESS_MODE` | No | `read` | Access tier: `read`, `readwrite`, or `full` |
+| `TS_TRANSPORT` | No | `stdio` | Transport mode: `stdio` or `http` |
+| `TS_HTTP_PORT` | No | `3000` | HTTP listen port (only used with `http` transport) |
 | `TS_API_BASE_URL` | No | `https://api.trustsource.io/v2` | TrustSource API base URL |
 | `TS_LOG_LEVEL` | No | `info` | Log level: `debug`, `info`, `warn`, `error` |
+
+## Transport Modes
+
+### stdio (default)
+
+For local use with Claude Desktop, Claude Code, or other MCP clients that launch the server as a subprocess.
+
+### Streamable HTTP
+
+For server deployment where multiple clients connect over the network. Each client gets an isolated session via `Mcp-Session-Id` headers.
+
+```bash
+docker run -p 3000:3000 \
+  -e TS_API_KEY=your-api-key \
+  -e TS_TRANSPORT=http \
+  trustsource/ts-mcp
+```
+
+The server exposes:
+- `POST /mcp` — MCP Streamable HTTP endpoint
+- `GET /health` — Health check (`{"status":"ok","version":"..."}`)
 
 ## MCP Client Setup
 

@@ -28,4 +28,6 @@ COPY --from=build /app/dist/ ./dist/
 
 ENV NODE_ENV=production
 
+EXPOSE 3000
+
 ENTRYPOINT ["node", "dist/index.js"]

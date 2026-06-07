@@ -8,13 +8,15 @@ TrustSource MCP Server (`ts-mcp`) exposes the TrustSource REST API v2 as a set o
 
 ### MCP Server (`src/index.ts`)
 
-Entry point. Loads configuration, validates the API key against TrustSource, registers domain tools filtered by the configured access mode, and connects via stdio transport.
+Entry point. Loads configuration, validates the API key against TrustSource, registers domain tools filtered by the configured access mode, and connects via the configured transport (stdio or Streamable HTTP).
 
 ### Configuration (`src/config.ts`)
 
 Reads environment variables:
 - `TS_API_KEY` (required) — TrustSource API key
 - `TS_ACCESS_MODE` — `read` | `readwrite` | `full` (default: `read`)
+- `TS_TRANSPORT` — `stdio` | `http` (default: `stdio`)
+- `TS_HTTP_PORT` — HTTP listen port (default: `3000`, only used with `http` transport)
 - `TS_API_BASE_URL` — API base URL (default: `https://api.trustsource.io/v2`)
 - `TS_LOG_LEVEL` — `debug` | `info` | `warn` | `error` (default: `info`)
 
@@ -48,28 +50,61 @@ Each domain tool bundles related API operations as "actions" with a shared input
 
 Reads OpenAPI spec and domain mapping, validates all mapped paths exist in the spec, warns about unmapped paths, and emits typed TypeScript tool definitions. Run via `npm run codegen`.
 
+## Transport Modes
+
+The server supports two transport modes, selected via `TS_TRANSPORT`:
+
+### stdio (default)
+
+Standard MCP stdio transport. The server communicates over stdin/stdout and handles a single session. Use for local development and direct MCP client integration (Claude Desktop, Claude Code).
+
+### Streamable HTTP
+
+Multi-session HTTP transport following the MCP Streamable HTTP specification. Each client session receives a unique `Mcp-Session-Id` header. Sessions are isolated and managed independently.
+
+- `POST /mcp` — MCP JSON-RPC messages (new sessions are created automatically)
+- `GET /health` — Health check endpoint (returns `{"status":"ok","version":"..."}`)
+
+Suitable for server deployment (ECS, Kubernetes) where multiple clients connect concurrently.
+
 ## Data Flow
 
 ```
-LLM Agent
-    │ MCP stdio
-    ▼
-MCP Server (tool dispatch)
-    │ validate input
-    │ check access mode
-    ▼
-TrustSource API Client
-    │ HTTPS + x-api-key
-    ▼
-TrustSource REST API v2
+                 ┌─────────────────────────────┐
+                 │        LLM Agents            │
+                 │  (Claude Desktop / Code /…)  │
+                 └──────────┬──────────────────┘
+                            │
+              ┌─────────────┴─────────────┐
+              │                           │
+         stdio (local)          HTTP POST /mcp (remote)
+              │                    │ Mcp-Session-Id
+              ▼                    ▼
+        ┌─────────────────────────────────┐
+        │        MCP Server               │
+        │  ┌───────────────────────────┐  │
+        │  │ Tool Registry (16 tools)  │  │
+        │  │ Access Control            │  │
+        │  │ Input Validation          │  │
+        │  └───────────┬───────────────┘  │
+        └──────────────┼──────────────────┘
+                       │ HTTPS + x-api-key
+                       ▼
+              TrustSource REST API v2
 ```
 
 ## Deployment
 
-Docker image with multi-stage build (build + runtime). Configuration via environment variables at container start.
+Docker image with multi-stage build (build + runtime). npm/yarn/corepack are removed from the runtime image to minimize the attack surface.
 
+**Local (stdio):**
 ```
-docker run -e TS_API_KEY=xxx -e TS_ACCESS_MODE=read trustsource/ts-mcp
+docker run -i --rm -e TS_API_KEY=xxx trustsource/ts-mcp
+```
+
+**Server (Streamable HTTP):**
+```
+docker run -p 3000:3000 -e TS_API_KEY=xxx -e TS_TRANSPORT=http trustsource/ts-mcp
 ```
 
 ## Update Flow
@@ -128,13 +163,29 @@ The domain-mapping.yaml file controls which API paths are included and how they 
 
 **Consequences:** Defense in depth — malformed input is rejected before reaching TrustSource. Startup fails fast on invalid credentials. No client-side rate limiting simplifies the implementation while TrustSource's server-side limits remain authoritative.
 
-### ADR-005: ts-scan quality gate before Docker Hub publish (2026-06-03, v0.1.0)
+### ADR-005: Streamable HTTP transport for server deployment (2026-06-07, v0.2.0)
+
+**Context:** The initial stdio transport only supports a single local session. For server deployment (ECS, Kubernetes), the server needs to handle multiple concurrent clients over the network.
+
+**Decision:** Add Streamable HTTP transport as an alternative, selected via `TS_TRANSPORT=http`. Each client session gets a unique `Mcp-Session-Id`. Sessions are isolated — each creates its own `McpServer` instance with independently registered tools. A `/health` endpoint supports load balancer health checks. The server listens on a configurable port (`TS_HTTP_PORT`, default 3000).
+
+**Consequences:** The server can be deployed as a shared service behind a security group that restricts access to authorized consumer groups. Multiple LLM agents can connect concurrently. Session state is in-memory (minimal — no caching), so horizontal scaling is straightforward. stdio remains the default for local/CLI use.
+
+### ADR-006: ts-scan quality gate before Docker Hub publish — SUPERSEDED by ADR-007 (2026-06-03, v0.1.0)
 
 **Context:** The MCP server is distributed as a Docker image. Publishing an image with known vulnerabilities undermines TrustSource's own value proposition. Since v1.7.0, ts-scan supports `upload --wait-for-analysis --exit-on-vulns --exit-on-legal` which blocks until TrustSource completes its analysis and returns a non-zero exit code on findings.
 
 **Decision:** The Docker publish workflow builds the image locally first, scans it with `ts-scan scan --use-syft`, uploads the scan to TrustSource with `--wait-for-analysis --exit-on-vulns --exit-on-legal --Werror`, and only pushes to Docker Hub if the analysis passes clean. The scan results are stored in the TrustSource project `ts-mcp`.
 
-**Consequences:** No Docker image is published with known vulnerabilities or legal issues. The publish step depends on TrustSource API availability (mitigated by `--wait-timeout 300`). Adds ~2-5 minutes to the publish pipeline. Uses the organization's `TrustSource_API-KEY` secret.
+**Consequences:** No Docker image is published with known vulnerabilities or legal issues. The publish step depends on TrustSource API availability (mitigated by `--wait-timeout 300`). Adds ~2-5 minutes to the publish pipeline. Uses the organization's `TRUSTSOURCE_API_KEY` secret.
+
+### ADR-007: Remove --exit-on-legal from quality gate (2026-06-07, v0.2.0)
+
+**Context:** The initial quality gate used both `--exit-on-vulns` and `--exit-on-legal`. Legal warnings (unresolved obligations) blocked the Docker publish even when they were informational and not actionable without manual compliance review.
+
+**Decision:** Remove `--exit-on-legal` from the ts-scan upload step. Keep `--exit-on-vulns --Werror` to block on vulnerability findings. Legal compliance is handled through the TrustSource approval workflow, not the CI gate.
+
+**Consequences:** The publish pipeline only blocks on vulnerability findings. Legal compliance remains visible in TrustSource but does not prevent image publication.
 
 ## CI/CD Pipeline
 
