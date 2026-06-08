@@ -1,6 +1,6 @@
 [
   { "ParameterKey": "Environment",     "ParameterValue": "dev" },
-  { "ParameterKey": "VpcId",           "ParameterValue": "vpc-XXXXXXXXX" },
+  { "ParameterKey": "VpcId",           "ParameterValue": "vpc-01bf2cea7432f427a" },
   { "ParameterKey": "SubnetIds",       "ParameterValue": "subnet-09899225e8d37ecb8,subnet-0a7d6003d025d4292" },
   { "ParameterKey": "ClusterArn",      "ParameterValue": "arn:aws:ecs:eu-central-1:118285606803:cluster/apps-dev-ts" },
   { "ParameterKey": "ImageRepository", "ParameterValue": "trustsource/ts-mcp" },
