@@ -107,6 +107,37 @@ docker run -i --rm -e TS_API_KEY=xxx trustsource/ts-mcp
 docker run -p 3000:3000 -e TS_API_KEY=xxx -e TS_TRANSPORT=http trustsource/ts-mcp
 ```
 
+### Recommended: Internal Load Balancer
+
+For production server deployments, we recommend placing the MCP server behind an internal application load balancer:
+
+```
+Internal clients (VPC only)
+        │
+        ▼  private DNS (e.g. mcp.internal)
+  ┌──────────────┐
+  │ Internal ALB  │ ◄── ingress restricted to known consumer security groups
+  │ (port 80/443) │
+  └──────┬───────┘
+         │ target group :3000
+         ▼
+  ┌──────────────┐
+  │  ECS Fargate  │ ◄── ingress only from ALB security group
+  │  (MCP Server) │ ──► egress HTTPS to TrustSource API
+  └──────────────┘
+         │
+         │ API key from secrets manager
+         ▼
+  TrustSource REST API
+```
+
+This provides a triple security barrier:
+1. **DNS resolution** — private hosted zone, only resolvable within the VPC
+2. **ALB ingress** — security group permits only known consumer groups
+3. **Task ingress** — ECS task security group accepts only traffic from the ALB
+
+API keys should be stored in a secrets manager (e.g. AWS Secrets Manager) and injected at runtime, never passed as stack parameters or environment variables in config files.
+
 ## Update Flow
 
 ```
