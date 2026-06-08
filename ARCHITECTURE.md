@@ -102,46 +102,10 @@ Docker image with multi-stage build (build + runtime). npm/yarn/corepack are rem
 docker run -i --rm -e TS_API_KEY=xxx trustsource/ts-mcp
 ```
 
-**Server (Streamable HTTP, standalone):**
+**Server (Streamable HTTP):**
 ```
 docker run -p 3000:3000 -e TS_API_KEY=xxx -e TS_TRANSPORT=http trustsource/ts-mcp
 ```
-
-**Server (ECS with internal ALB — EACG deployment):**
-
-```
-                         VPC (private)
-                              │
-    ┌─────────────────────────┼─────────────────────────────┐
-    │                         │                             │
-    │   mcp.dev.trustsource.intern                          │
-    │         │ (Route53 private hosted zone)                │
-    │         ▼                                             │
-    │   ┌─────────────┐    SG: alb-int.dev.ts               │
-    │   │ Internal ALB │◄── only apps/svcs/crwls/fcts SGs   │
-    │   │  (port 80)   │                                    │
-    │   └──────┬──────┘                                     │
-    │          │ Target Group :3000                          │
-    │          ▼                                             │
-    │   ┌─────────────┐    SG: ts-mcp-{env}-task            │
-    │   │  ECS Fargate │◄── ingress only from ALB SG        │
-    │   │  (MCP Server)│──► egress 443 to TrustSource API   │
-    │   └─────────────┘                                     │
-    │          │                                             │
-    │          │ API key from Secrets Manager                │
-    │          │ (trustsource/app/api-key)                   │
-    └──────────┼────────────────────────────────────────────┘
-               │ HTTPS
-               ▼
-      TrustSource REST API v2
-```
-
-Traffic flow:
-1. Internal services (with `apps.dev.ts`, `svcs.dev.ts`, etc. SG) resolve `mcp.dev.trustsource.intern`
-2. ALB accepts traffic only from known cluster SGs (`alb-int.dev.ts` ingress rules)
-3. ALB forwards to ECS tasks on port 3000 (Target Group health check: `GET /health`)
-4. ECS tasks accept traffic only from the ALB SG (task SG ingress rule)
-5. ECS tasks reach TrustSource API via HTTPS egress
 
 ## Update Flow
 
@@ -207,15 +171,7 @@ The domain-mapping.yaml file controls which API paths are included and how they 
 
 **Consequences:** The server can be deployed as a shared service behind a security group that restricts access to authorized consumer groups. Multiple LLM agents can connect concurrently. Session state is in-memory (minimal — no caching), so horizontal scaling is straightforward. stdio remains the default for local/CLI use.
 
-### ADR-006: Internal ALB with private DNS for server deployment (2026-06-09, v0.2.0)
-
-**Context:** The MCP server deployed on ECS needs to be reachable by internal services but must not be exposed to the public internet. Direct security group references between consumers and ECS tasks are fragile and don't support DNS-based service discovery.
-
-**Decision:** Deploy a dedicated internal ALB (`Scheme: internal`) with the existing `alb-int.dev.ts` security group, which only permits ingress from known cluster SGs (apps, svcs, crwls, fcts). A private Route53 A-record (`mcp.{env}.trustsource.intern`) points to the ALB. ECS tasks sit behind the ALB with their own security group that only accepts traffic from the ALB SG. API key is injected from AWS Secrets Manager (`trustsource/app/api-key`), never passed as a parameter.
-
-**Consequences:** Triple security barrier (DNS resolution only in VPC → ALB ingress restricted to cluster SGs → task ingress restricted to ALB SG). Clean DNS-based service discovery. HTTPS optional via ACM certificate. Reuses existing security group pattern from the TrustSource platform.
-
-### ADR-007: ts-scan quality gate before Docker Hub publish — SUPERSEDED by ADR-008 (2026-06-03, v0.1.0)
+### ADR-006: ts-scan quality gate before Docker Hub publish — SUPERSEDED by ADR-007 (2026-06-03, v0.1.0)
 
 **Context:** The MCP server is distributed as a Docker image. Publishing an image with known vulnerabilities undermines TrustSource's own value proposition. Since v1.7.0, ts-scan supports `upload --wait-for-analysis --exit-on-vulns --exit-on-legal` which blocks until TrustSource completes its analysis and returns a non-zero exit code on findings.
 
@@ -223,7 +179,7 @@ The domain-mapping.yaml file controls which API paths are included and how they 
 
 **Consequences:** No Docker image is published with known vulnerabilities or legal issues. The publish step depends on TrustSource API availability (mitigated by `--wait-timeout 300`). Adds ~2-5 minutes to the publish pipeline. Uses the organization's `TRUSTSOURCE_API_KEY` secret.
 
-### ADR-008: Remove --exit-on-legal from quality gate (2026-06-07, v0.2.0)
+### ADR-007: Remove --exit-on-legal from quality gate (2026-06-07, v0.2.0)
 
 **Context:** The initial quality gate used both `--exit-on-vulns` and `--exit-on-legal`. Legal warnings (unresolved obligations) blocked the Docker publish even when they were informational and not actionable without manual compliance review.
 
