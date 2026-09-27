@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.2.2] - 2026-09-27
+
+### Security
+
+- Bumped transitive dependencies to clear the ts-scan quality gate that blocked the v0.2.1 image publish:
+  - `fast-uri` 3.1.6 → 3.1.8 — fixes CVE-2026-84394 (host confusion via an unclosed bracket in the URI authority) and CVE-2026-84292 (authority injection via an unvalidated port in `serialize`); both patched upstream in 3.1.7. Reached via `@modelcontextprotocol/sdk` → `ajv`
+  - `hono` 4.13.4 → 4.13.9 — fixes GHSA-gqvv-2mrq-wpjv (`toSSG()` writes outside the output directory; incomplete fix for CVE-2026-39408), GHSA-crvj-82cr-hjcx (query parser reads parameters after the URL fragment, causing cache-key/proxy interpretation differentials) and GHSA-g6gw-c38x-mqfc (unbounded dot-notation nesting in `parseBody()` causes memory exhaustion); all patched upstream in 4.13.5
+  - `qs` 6.15.2 → 6.16.0 — fixes GHSA-4mjr-xmp4-gh2g (DoS via attacker-controlled `isBuffer`) and GHSA-x5fp-wj9c-mxmx (array-limit bypass via bracket-key comma parsing). Reached via `@modelcontextprotocol/sdk` → `express`/`body-parser`
+  - `@hono/node-server` 1.19.17 → 2.1.1 — GHSA-frvp-7c67-39w9 (path traversal in `serve-static` on Windows via an encoded `%5C`) is patched upstream in both 1.19.15 and 2.0.5, so 1.19.17 is already unaffected, but the version is still reported by the scan. 2.1.1 sits outside every published affected range for this advisory, so the gate clears without a module-level exemption that would have to be re-applied after every base-image bump
+- Added `overrides` in `package.json` pinning security floors for `fast-uri`, `hono`, `qs` and `@hono/node-server`. Each floor stays inside the major line its parent supports, so it enforces the patched version without risking an unintended breaking bump
+
+### Changed
+
+- Raised the `@modelcontextprotocol/sdk` floor to `^1.30.1` (from `^1.12.0`). 1.30.0 is the first release to widen its `@hono/node-server` range to `^1.19.9 || ^2.0.5`, which the override above depends on
+
+### Fixed
+
+- The server no longer reports a hardcoded version. `VERSION` is now read from `package.json` at startup, so the value in the startup log, the `GET /health` response and the MCP `serverInfo` handshake always matches the released version. It had been stuck at `0.2.0` since the 0.2.1 release
+
 ## [0.2.1] - 2026-08-24
 
 ### Changed
