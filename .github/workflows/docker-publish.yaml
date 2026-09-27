@@ -28,15 +28,39 @@ jobs:
 
       # --- Build the image locally (don't push yet) ---
 
+      # A release is a pushed git tag `vX.Y.Z`. Refuse to publish one whose
+      # version does not match package.json — otherwise the image tag, the
+      # /health endpoint and CHANGELOG.md would disagree about what shipped.
+      - name: Verify release tag matches package.json
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          set -euo pipefail
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          PKG_VERSION="$(node -p "require('./package.json').version")"
+          if [ "$TAG_VERSION" != "$PKG_VERSION" ]; then
+            echo "::error::Tag $GITHUB_REF_NAME does not match package.json version $PKG_VERSION."
+            exit 1
+          fi
+          if ! grep -q "^## \[$PKG_VERSION\]" CHANGELOG.md; then
+            echo "::error::CHANGELOG.md has no entry for [$PKG_VERSION]."
+            exit 1
+          fi
+          echo "Releasing $PKG_VERSION"
+
       - name: Docker meta
         id: meta
         uses: docker/metadata-action@v6
         with:
           images: trustsource/ts-mcp
           tags: |
+            # Branch builds: a moving tag per branch. DEV pulls :main.
             type=ref,event=branch
+            # Every build stays addressable by commit.
             type=sha,prefix=,format=short
+            # Releases only (git tag vX.Y.Z): :X.Y.Z and the floating :X.Y
             type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            # :latest moves only on a release, never on a branch build.
             type=raw,value=latest,enable=${{ startsWith(github.ref, 'refs/tags/v') }}
 
       - name: Build image (local only)
