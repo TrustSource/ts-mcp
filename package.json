@@ -1,6 +1,6 @@
 {
   "name": "@trustsource/mcp-server",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "description": "MCP server for the TrustSource REST API",
   "type": "module",
   "main": "dist/index.js",

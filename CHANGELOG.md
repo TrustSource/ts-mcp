@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.2.4] - 2026-09-28
+
+### Fixed
+
+- `TrustSourceClient.request()` resolved every call via `new URL(path, this.baseUrl)`. Per WHATWG URL join semantics a leading-slash `path` (every generated tool path starts with `/`) replaces the base URL's path instead of appending to it, so the client silently dropped the `/v2` segment from `this.baseUrl` on every request. Fixed with a plain string join (`this.baseUrl.replace(/\/$/, "") + path`), which does not have that behavior. Added a regression test (`src/api-client.test.ts`, via `vitest`) pinning the resolved URL for a real generated path against the real default base URL
+- Checked empirically against the live TrustSource API before release: `/core/projects` and `/account/authorization` return identical `200` responses with or without the `/v2` segment (the API Gateway does not enforce the prefix, and versions via a fixed header on its side instead). So this was a latent correctness bug rather than an observed outage — worth fixing regardless, since relying on that gateway leniency was never guaranteed
+
 ## [0.2.3] - 2026-09-28
 
 ### Added
