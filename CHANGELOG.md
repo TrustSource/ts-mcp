@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.2.3] - 2026-09-28
+
+### Added
+
+- The published Docker image is now a multi-platform manifest covering `linux/amd64` and `linux/arm64`. Previously only `linux/amd64` was pushed, so Apple Silicon workstations and ARM servers — including ECS/Fargate on Graviton — ran the server under emulation
+
+### Changed
+
+- `docker-publish` builds the release image for both platforms via QEMU/Buildx. The scan step still builds a single `linux/amd64` image, because `load: true` cannot load a manifest list into the docker daemon and ts-scan needs one concrete image; the npm dependency set is identical across platforms, so the vulnerability gate is unaffected
+- Both build steps now share a GitHub Actions layer cache, so the published `amd64` image reuses the exact layers that passed the quality gate instead of being rebuilt independently
+
 ## [0.2.2] - 2026-09-27
 
 ### Security
