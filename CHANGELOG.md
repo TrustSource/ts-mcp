@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ### Security
 
 - Closed a gap in project-scope enforcement found during pre-release review: an action whose project-identifying parameter is optional (for example `modules` → `list_modules`, which takes an optional `projectId` query filter) fell through scope enforcement when the caller left it unset and the scope named more than one project — no injection was possible (there is no single ID to fill in for a multi-project mandate) and no rejection occurred either, so the call went out unfiltered and returned every project in the account. Verified live before the fix: with a two-project scope configured, `list_modules` without an explicit project returned 100 modules spanning unrelated projects, including other accounts' infrastructure identifiers. Fixed by rejecting the call when the scope names more than one project and no explicit project ID is given, naming the projects the caller may choose from — matching the existing behaviour for an explicit out-of-scope value
+- `ip-address` 10.5.0 → 10.7.2 — fixes GHSA-2vr4-cq9g-pvrc (NAT64 local-use range not recognised, SSRF/trust-boundary bypass) and GHSA-rpw4-54j3-4h4q (`Address6.isLinkLocal()` matches `fe80::/64` instead of `fe80::/10`, same bypass class); both patched upstream in 10.5.1. Reached via `@modelcontextprotocol/sdk` → `express-rate-limit`. Pinned as an `overrides` security floor, same as the other transitive floors below it
 
 ## [0.2.4] - 2026-09-28
 
