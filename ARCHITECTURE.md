@@ -157,6 +157,13 @@ This provides a triple security barrier:
 
 API keys should be stored in a secrets manager (e.g. AWS Secrets Manager) and injected at runtime, never passed as stack parameters or environment variables in config files.
 
+The pattern above is deliberately generic. **Concrete infrastructure — CloudFormation
+templates, account and network identifiers, private DNS names, deployment workflows —
+is not part of this repository.** It lives in the operator's own private repository, so
+that this one stays a portable, publishable MCP server. The published Docker image
+(`trustsource/ts-mcp`) is the interface between the two: this repository builds, scans
+and publishes it; an operator pulls it and deploys it their own way.
+
 ## Update Flow
 
 ```
