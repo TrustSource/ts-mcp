@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.3.1] - 2026-10-06
+
+### Changed
+
+- Tool responses are now compact JSON instead of pretty-printed (`JSON.stringify(body)` instead of `JSON.stringify(body, null, 2)`), for both successful results and API error bodies. The content is identical; only the whitespace is gone. Measured against the live API, responses shrink by roughly 20% for flat listings (`list_modules`) up to 47% for deeply nested ones (`partsList`: 42.5 KB → 22.5 KB) — fewer tokens for the model to read per call. The `trustsource://scope` resource stays pretty-printed: it is a few lines and meant to be read
+
 ## [0.3.0] - 2026-09-29
 
 ### Added
